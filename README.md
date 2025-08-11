@@ -1,5 +1,7 @@
 # EVE University Wiki MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@kongyo2/eve-university-wiki-mcp-server)](https://smithery.ai/server/@kongyo2/eve-university-wiki-mcp-server)
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides access to EVE University Wiki content with automatic Wayback Machine fallback for enhanced reliability.
 
 This server enables AI assistants to search, retrieve, and explore EVE Online knowledge from the comprehensive EVE University Wiki, making it an invaluable resource for EVE Online players, developers, and enthusiasts.
@@ -65,6 +67,14 @@ Find related articles based on categories
 - **eve-wiki-search-helper**: Generates optimized search queries for EVE University Wiki based on user questions
 
 ## Installation & Setup
+
+### Installing via Smithery
+
+To install eve-university-wiki-mcp-server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kongyo2/eve-university-wiki-mcp-server):
+
+```bash
+npx -y @smithery/cli install @kongyo2/eve-university-wiki-mcp-server --client claude
+```
 
 ### Prerequisites
 - Node.js 18+ 
@@ -207,3 +217,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - [FastMCP](https://github.com/punkpeye/fastmcp) - The MCP server framework used
 - [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol specification
 - [EVE University Wiki](https://wiki.eveuniversity.org/) - The knowledge source
+
