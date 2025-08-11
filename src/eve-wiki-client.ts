@@ -88,7 +88,7 @@ export class EveWikiClient {
         params: { url }
       });
 
-      if (response.data?.archived_snapshots?.closest?.available) {
+      if (response?.data?.archived_snapshots?.closest?.available) {
         return {
           timestamp: response.data.archived_snapshots.closest.timestamp,
           url: response.data.archived_snapshots.closest.url,

@@ -9,6 +9,7 @@ const mockedAxios = vi.mocked(axios);
 describe("EVE Wiki Client Extended Tests", () => {
   let client: EveWikiClient;
   let mockAxiosInstance: any;
+  let mockWaybackInstance: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -17,9 +18,14 @@ describe("EVE Wiki Client Extended Tests", () => {
     mockAxiosInstance = {
       get: vi.fn(),
     };
+    mockWaybackInstance = {
+      get: vi.fn(),
+    };
     
     // Mock axios.create to return our mock instance
-    mockedAxios.create.mockReturnValue(mockAxiosInstance);
+    mockedAxios.create = vi.fn()
+      .mockReturnValueOnce(mockAxiosInstance)
+      .mockReturnValueOnce(mockWaybackInstance);
     
     client = new EveWikiClient();
   });
@@ -84,7 +90,7 @@ describe("EVE Wiki Client Extended Tests", () => {
       const error = new Error("Persistent network error");
       mockAxiosInstance.get.mockRejectedValue(error);
 
-      await expect(client.search("test", 10)).rejects.toThrow("Failed to search EVE Wiki");
+      await expect(client.search("test", 10)).rejects.toThrow("Failed to search EVE Wiki from both primary source and Wayback Machine: Error: Persistent network error");
       
       // Should try initial + 3 retries = 4 total attempts
       expect(mockAxiosInstance.get).toHaveBeenCalledTimes(4);
@@ -107,7 +113,7 @@ describe("EVE Wiki Client Extended Tests", () => {
       
       // Should take at least some time due to backoff (1000ms + 2000ms + 4000ms = 7000ms minimum)
       // But we'll be lenient in testing to avoid flaky tests
-      expect(duration).toBeGreaterThan(500);
+      expect(duration).toBeGreaterThan(1000);
     }, 10000); // Increase timeout
   });
 
