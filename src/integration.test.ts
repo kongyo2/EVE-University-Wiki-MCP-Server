@@ -16,7 +16,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
       name: "EVE University Wiki",
       version: "1.0.0",
     });
-    
+
     client = new EveWikiClient();
   });
 
@@ -48,12 +48,12 @@ describe("EVE University Wiki MCP Server Integration", () => {
         // Limit must be between 1 and 50, default 10
         const validLimits = [1, 10, 25, 50];
         const invalidLimits = [0, -1, 51, 100];
-        
+
         validLimits.forEach(limit => {
           expect(limit).toBeGreaterThanOrEqual(1);
           expect(limit).toBeLessThanOrEqual(50);
         });
-        
+
         invalidLimits.forEach(limit => {
           expect(limit < 1 || limit > 50).toBe(true);
         });
@@ -73,12 +73,12 @@ describe("EVE University Wiki MCP Server Integration", () => {
         // Limit must be between 1 and 20, default 10
         const validLimits = [1, 5, 10, 15, 20];
         const invalidLimits = [0, -1, 21, 50];
-        
+
         validLimits.forEach(limit => {
           expect(limit).toBeGreaterThanOrEqual(1);
           expect(limit).toBeLessThanOrEqual(20);
         });
-        
+
         invalidLimits.forEach(limit => {
           expect(limit < 1 || limit > 20).toBe(true);
         });
@@ -114,6 +114,39 @@ describe("EVE University Wiki MCP Server Integration", () => {
       expect(parsed.results[0]).toHaveProperty("pageid");
     });
 
+    it("should format search response with archived results correctly", () => {
+      const mockQuery = "Rifter";
+      const mockResults = [
+        {
+          title: "Rifter (Archived)",
+          snippet: "Archived content...",
+          pageid: -1, // Archived result
+          wordcount: 0,
+          timestamp: "20230101000000",
+        },
+      ];
+      const hasArchivedResults = mockResults.some(r => r.pageid === -1);
+
+      const response = JSON.stringify(
+        {
+          query: mockQuery,
+          results: mockResults,
+          note: hasArchivedResults
+            ? "Some results are from Internet Archive Wayback Machine"
+            : undefined,
+        },
+        null,
+        2,
+      );
+
+      const parsed = JSON.parse(response);
+      expect(parsed).toHaveProperty("query");
+      expect(parsed).toHaveProperty("results");
+      expect(parsed).toHaveProperty("note");
+      expect(parsed.note).toContain("Internet Archive Wayback Machine");
+      expect(parsed.results[0].pageid).toBe(-1);
+    });
+
     it("should format article response correctly", () => {
       const mockArticle = {
         title: "Rifter",
@@ -121,14 +154,14 @@ describe("EVE University Wiki MCP Server Integration", () => {
         pageid: 123,
         timestamp: "2023-01-01T00:00:00Z"
       };
-      
+
       const response = JSON.stringify({
         title: mockArticle.title,
         content: mockArticle.content.substring(0, 10000),
         pageid: mockArticle.pageid,
         timestamp: mockArticle.timestamp,
       }, null, 2);
-      
+
       const parsed = JSON.parse(response);
       expect(parsed).toHaveProperty("title");
       expect(parsed).toHaveProperty("content");
@@ -137,20 +170,75 @@ describe("EVE University Wiki MCP Server Integration", () => {
       expect(parsed.content.length).toBeLessThanOrEqual(10000);
     });
 
+    it("should format archived article response correctly", () => {
+      const mockArticle = {
+        title: "Rifter (Archived)",
+        content: "Archived content...",
+        pageid: -1,
+        timestamp: "2023-01-01T00:00:00Z",
+      };
+      const isArchived = mockArticle.pageid === -1;
+
+      const response = JSON.stringify(
+        {
+          title: mockArticle.title,
+          content: mockArticle.content.substring(0, 10000),
+          pageid: mockArticle.pageid,
+          timestamp: mockArticle.timestamp,
+          source: isArchived ? "wayback_machine" : "live_wiki",
+          note: isArchived
+            ? "Content retrieved from Internet Archive Wayback Machine"
+            : undefined,
+        },
+        null,
+        2,
+      );
+
+      const parsed = JSON.parse(response);
+      expect(parsed).toHaveProperty("title");
+      expect(parsed).toHaveProperty("source", "wayback_machine");
+      expect(parsed).toHaveProperty("note");
+      expect(parsed.note).toContain("Internet Archive Wayback Machine");
+    });
+
     it("should format summary response correctly", () => {
       const mockTitle = "Rifter";
       const mockSummary = "The Rifter is a Minmatar frigate known for its speed.";
-      
+
       const response = JSON.stringify({
         title: mockTitle,
         summary: mockSummary,
       }, null, 2);
-      
+
       const parsed = JSON.parse(response);
       expect(parsed).toHaveProperty("title");
       expect(parsed).toHaveProperty("summary");
       expect(parsed.title).toBe(mockTitle);
       expect(parsed.summary).toBe(mockSummary);
+    });
+
+    it("should format archived summary response correctly", () => {
+      const mockTitle = "Rifter";
+      const mockSummary =
+        "Archived summary (Retrieved from archived version)";
+      const isArchived = mockSummary.includes(
+        "(Retrieved from archived version)",
+      );
+
+      const response = JSON.stringify(
+        {
+          title: mockTitle,
+          summary: mockSummary,
+          source: isArchived ? "wayback_machine" : "live_wiki",
+        },
+        null,
+        2,
+      );
+
+      const parsed = JSON.parse(response);
+      expect(parsed).toHaveProperty("title");
+      expect(parsed).toHaveProperty("summary");
+      expect(parsed).toHaveProperty("source", "wayback_machine");
     });
 
     it("should format sections response correctly", () => {
@@ -159,12 +247,12 @@ describe("EVE University Wiki MCP Server Integration", () => {
         { title: "Overview", level: 1, index: 1 },
         { title: "Fitting", level: 2, index: 2 }
       ];
-      
+
       const response = JSON.stringify({
         title: mockTitle,
         sections: mockSections,
       }, null, 2);
-      
+
       const parsed = JSON.parse(response);
       expect(parsed).toHaveProperty("title");
       expect(parsed).toHaveProperty("sections");
@@ -177,12 +265,12 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format links response correctly", () => {
       const mockTitle = "Rifter";
       const mockLinks = ["Minmatar", "Frigate", "Ship fitting"];
-      
+
       const response = JSON.stringify({
         title: mockTitle,
         links: mockLinks.slice(0, 100),
       }, null, 2);
-      
+
       const parsed = JSON.parse(response);
       expect(parsed).toHaveProperty("title");
       expect(parsed).toHaveProperty("links");
@@ -193,12 +281,12 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format related topics response correctly", () => {
       const mockTitle = "Rifter";
       const mockRelatedTopics = ["Slasher", "Breacher", "Burst"];
-      
+
       const response = JSON.stringify({
         title: mockTitle,
         related_topics: mockRelatedTopics,
       }, null, 2);
-      
+
       const parsed = JSON.parse(response);
       expect(parsed).toHaveProperty("title");
       expect(parsed).toHaveProperty("related_topics");
@@ -210,7 +298,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format search errors correctly", () => {
       const error = new Error("Network timeout");
       const errorResponse = `Error searching EVE Wiki: ${error}`;
-      
+
       expect(errorResponse).toContain("Error searching EVE Wiki:");
       expect(errorResponse).toContain("Network timeout");
     });
@@ -218,7 +306,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format article errors correctly", () => {
       const error = new Error("Article not found");
       const errorResponse = `Error getting article: ${error}`;
-      
+
       expect(errorResponse).toContain("Error getting article:");
       expect(errorResponse).toContain("Article not found");
     });
@@ -226,7 +314,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format summary errors correctly", () => {
       const error = new Error("Summary unavailable");
       const errorResponse = `Error getting summary: ${error}`;
-      
+
       expect(errorResponse).toContain("Error getting summary:");
       expect(errorResponse).toContain("Summary unavailable");
     });
@@ -234,7 +322,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format sections errors correctly", () => {
       const error = new Error("Sections not found");
       const errorResponse = `Error getting sections: ${error}`;
-      
+
       expect(errorResponse).toContain("Error getting sections:");
       expect(errorResponse).toContain("Sections not found");
     });
@@ -242,7 +330,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format links errors correctly", () => {
       const error = new Error("Links unavailable");
       const errorResponse = `Error getting links: ${error}`;
-      
+
       expect(errorResponse).toContain("Error getting links:");
       expect(errorResponse).toContain("Links unavailable");
     });
@@ -250,7 +338,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should format related topics errors correctly", () => {
       const error = new Error("Related topics not found");
       const errorResponse = `Error getting related topics: ${error}`;
-      
+
       expect(errorResponse).toContain("Error getting related topics:");
       expect(errorResponse).toContain("Related topics not found");
     });
@@ -260,7 +348,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should limit article content to 10000 characters", () => {
       const longContent = "a".repeat(20000);
       const limitedContent = longContent.substring(0, 10000);
-      
+
       expect(limitedContent.length).toBe(10000);
       expect(limitedContent.length).toBeLessThan(longContent.length);
     });
@@ -268,7 +356,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should limit links to 100 items", () => {
       const manyLinks = Array.from({ length: 200 }, (_, i) => `Link ${i}`);
       const limitedLinks = manyLinks.slice(0, 100);
-      
+
       expect(limitedLinks.length).toBe(100);
       expect(limitedLinks.length).toBeLessThan(manyLinks.length);
     });
@@ -277,7 +365,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
       const maxSearchLimit = 50;
       const minSearchLimit = 1;
       const defaultSearchLimit = 10;
-      
+
       expect(maxSearchLimit).toBe(50);
       expect(minSearchLimit).toBe(1);
       expect(defaultSearchLimit).toBe(10);
@@ -287,7 +375,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
       const maxRelatedLimit = 20;
       const minRelatedLimit = 1;
       const defaultRelatedLimit = 10;
-      
+
       expect(maxRelatedLimit).toBe(20);
       expect(minRelatedLimit).toBe(1);
       expect(defaultRelatedLimit).toBe(10);
@@ -300,7 +388,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
       const resourceName = "EVE University Wiki Info";
       const resourceMimeType = "text/plain";
       const resourceText = "EVE University Wiki - The comprehensive resource for EVE Online knowledge and learning";
-      
+
       expect(resourceUri).toBe("https://wiki.eveuniversity.org/");
       expect(resourceName).toBe("EVE University Wiki Info");
       expect(resourceMimeType).toBe("text/plain");
@@ -313,7 +401,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
     it("should have eve-wiki-search-helper prompt", () => {
       const promptName = "eve-wiki-search-helper";
       const promptDescription = "Generate a search query for EVE University Wiki based on your question";
-      
+
       expect(promptName).toBe("eve-wiki-search-helper");
       expect(promptDescription).toContain("EVE University Wiki");
       expect(promptDescription).toContain("search query");
@@ -325,7 +413,7 @@ describe("EVE University Wiki MCP Server Integration", () => {
         description: "Your question about EVE Online",
         required: true,
       };
-      
+
       expect(promptArg.name).toBe("question");
       expect(promptArg.required).toBe(true);
       expect(promptArg.description).toContain("EVE Online");
@@ -344,7 +432,7 @@ Generate an appropriate search query for EVE University Wiki to find relevant in
 - Game lore and background
 
 Search query:`;
-      
+
       expect(expectedPrompt).toContain(question);
       expect(expectedPrompt).toContain("EVE Online game mechanics");
       expect(expectedPrompt).toContain("Ships, modules, and equipment");
@@ -363,7 +451,7 @@ Search query:`;
         get_eve_wiki_links: "Get the links contained within an EVE University Wiki article",
         get_eve_wiki_related_topics: "Get topics related to an EVE University Wiki article based on categories",
       };
-      
+
       Object.entries(toolDescriptions).forEach(([toolName, description]) => {
         expect(description).toContain("EVE University Wiki");
         expect(description.length).toBeGreaterThan(20);
@@ -380,7 +468,7 @@ Search query:`;
         limit: "Maximum number of results to return",
         relatedLimit: "Maximum number of related topics to return",
       };
-      
+
       Object.values(paramDescriptions).forEach(description => {
         expect(description.length).toBeGreaterThan(10);
         expect(description).toMatch(/^[A-Z]/); // Should start with capital letter

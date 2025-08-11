@@ -12,7 +12,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockEveWikiClient = {
       search: vi.fn(),
       getArticle: vi.fn(),
@@ -42,10 +42,10 @@ describe("EVE University Wiki MCP Server Tools", () => {
           snippet: "The Rifter is a Minmatar frigate",
           pageid: 123,
           wordcount: 500,
-          timestamp: "2023-01-01T00:00:00Z"
-        }
+          timestamp: "2023-01-01T00:00:00Z",
+        },
       ];
-      
+
       mockEveWikiClient.search.mockResolvedValue(mockResults);
 
       // Simulate the tool execution logic from server.ts
@@ -67,7 +67,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
       const result = await executeSearchTool({ query: "Rifter", limit: 10 });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.query).toBe("Rifter");
       expect(parsed.results).toEqual(mockResults);
       expect(mockEveWikiClient.search).toHaveBeenCalledWith("Rifter", 10);
@@ -103,9 +103,9 @@ describe("EVE University Wiki MCP Server Tools", () => {
         content: "a".repeat(15000), // Long content
         pageid: 123,
         revid: 456,
-        timestamp: "2023-01-01T00:00:00Z"
+        timestamp: "2023-01-01T00:00:00Z",
       };
-      
+
       mockEveWikiClient.getArticle.mockResolvedValue(mockArticle);
 
       const executeArticleTool = async (args: { title: string }) => {
@@ -128,15 +128,60 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
       const result = await executeArticleTool({ title: "Rifter" });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.title).toBe("Rifter");
       expect(parsed.content.length).toBe(10000); // Should be limited
       expect(parsed.pageid).toBe(123);
       expect(mockEveWikiClient.getArticle).toHaveBeenCalledWith("Rifter");
     });
 
+    it("should return archived source when article is from Wayback Machine", async () => {
+      const mockArchivedArticle = {
+        title: "Rifter (Archived)",
+        content: "Archived content",
+        pageid: -1, // Indicates article is from Wayback Machine
+        revid: -1,
+        timestamp: "2023-01-01T00:00:00Z",
+      };
+
+      mockEveWikiClient.getArticle.mockResolvedValue(mockArchivedArticle);
+
+      // Simulate the tool execution logic from server.ts
+      const executeArticleTool = async (args: { title: string }) => {
+        try {
+          const article = await mockEveWikiClient.getArticle(args.title);
+          const isArchived = article.pageid === -1;
+          return JSON.stringify(
+            {
+              title: article.title,
+              content: article.content.substring(0, 10000),
+              pageid: article.pageid,
+              timestamp: article.timestamp,
+              source: isArchived ? "wayback_machine" : "live_wiki",
+              note: isArchived
+                ? "Content retrieved from Internet Archive Wayback Machine"
+                : undefined,
+            },
+            null,
+            2,
+          );
+        } catch (error) {
+          return `Error getting article: ${error}`;
+        }
+      };
+
+      const result = await executeArticleTool({ title: "Rifter" });
+      const parsed = JSON.parse(result);
+
+      expect(parsed.title).toBe("Rifter (Archived)");
+      expect(parsed.source).toBe("wayback_machine");
+      expect(parsed.note).toContain("Internet Archive Wayback Machine");
+      expect(mockEveWikiClient.getArticle).toHaveBeenCalledWith("Rifter");
+    });
+
     it("should execute summary tool correctly", async () => {
-      const mockSummary = "The Rifter is a Minmatar frigate known for its speed.";
+      const mockSummary =
+        "The Rifter is a Minmatar frigate known for its speed.";
       mockEveWikiClient.getSummary.mockResolvedValue(mockSummary);
 
       const executeSummaryTool = async (args: { title: string }) => {
@@ -157,16 +202,50 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
       const result = await executeSummaryTool({ title: "Rifter" });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.title).toBe("Rifter");
       expect(parsed.summary).toBe(mockSummary);
+      expect(mockEveWikiClient.getSummary).toHaveBeenCalledWith("Rifter");
+    });
+
+    it("should return archived source when summary is from Wayback Machine", async () => {
+      const mockArchivedSummary =
+        "Archived summary content (Retrieved from archived version)";
+      mockEveWikiClient.getSummary.mockResolvedValue(mockArchivedSummary);
+
+      // Simulate the tool execution logic from server.ts
+      const executeSummaryTool = async (args: { title: string }) => {
+        try {
+          const summary = await mockEveWikiClient.getSummary(args.title);
+          const isArchived = summary.includes(
+            "(Retrieved from archived version)",
+          );
+          return JSON.stringify(
+            {
+              title: args.title,
+              summary: summary,
+              source: isArchived ? "wayback_machine" : "live_wiki",
+            },
+            null,
+            2,
+          );
+        } catch (error) {
+          return `Error getting summary: ${error}`;
+        }
+      };
+
+      const result = await executeSummaryTool({ title: "Rifter" });
+      const parsed = JSON.parse(result);
+
+      expect(parsed.summary).toBe(mockArchivedSummary);
+      expect(parsed.source).toBe("wayback_machine");
       expect(mockEveWikiClient.getSummary).toHaveBeenCalledWith("Rifter");
     });
 
     it("should execute sections tool correctly", async () => {
       const mockSections = [
         { title: "Overview", level: 1, index: 1 },
-        { title: "Fitting", level: 2, index: 2 }
+        { title: "Fitting", level: 2, index: 2 },
       ];
       mockEveWikiClient.getSections.mockResolvedValue(mockSections);
 
@@ -188,7 +267,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
       const result = await executeSectionsTool({ title: "Rifter" });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.title).toBe("Rifter");
       expect(parsed.sections).toEqual(mockSections);
       expect(mockEveWikiClient.getSections).toHaveBeenCalledWith("Rifter");
@@ -216,7 +295,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
       const result = await executeLinksTool({ title: "Rifter" });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.title).toBe("Rifter");
       expect(parsed.links.length).toBe(100); // Should be limited
       expect(mockEveWikiClient.getLinks).toHaveBeenCalledWith("Rifter");
@@ -226,7 +305,10 @@ describe("EVE University Wiki MCP Server Tools", () => {
       const mockRelatedTopics = ["Slasher", "Breacher", "Burst"];
       mockEveWikiClient.getRelatedTopics.mockResolvedValue(mockRelatedTopics);
 
-      const executeRelatedTopicsTool = async (args: { title: string; limit: number }) => {
+      const executeRelatedTopicsTool = async (args: {
+        title: string;
+        limit: number;
+      }) => {
         try {
           const relatedTopics = await mockEveWikiClient.getRelatedTopics(
             args.title,
@@ -245,19 +327,27 @@ describe("EVE University Wiki MCP Server Tools", () => {
         }
       };
 
-      const result = await executeRelatedTopicsTool({ title: "Rifter", limit: 10 });
+      const result = await executeRelatedTopicsTool({
+        title: "Rifter",
+        limit: 10,
+      });
       const parsed = JSON.parse(result);
-      
+
       expect(parsed.title).toBe("Rifter");
       expect(parsed.related_topics).toEqual(mockRelatedTopics);
-      expect(mockEveWikiClient.getRelatedTopics).toHaveBeenCalledWith("Rifter", 10);
+      expect(mockEveWikiClient.getRelatedTopics).toHaveBeenCalledWith(
+        "Rifter",
+        10,
+      );
     });
   });
 
   describe("Parameter Validation Schemas", () => {
     it("should validate search parameters correctly", () => {
       const searchSchema = z.object({
-        query: z.string().describe("Search query for EVE University Wiki"),
+        query: z
+          .string()
+          .describe("Search query for EVE University Wiki"),
         limit: z
           .number()
           .min(1)
@@ -292,7 +382,9 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
     it("should validate article parameters correctly", () => {
       const articleSchema = z.object({
-        title: z.string().describe("Title of the EVE University Wiki article"),
+        title: z
+          .string()
+          .describe("Title of the EVE University Wiki article"),
       });
 
       const validParams = { title: "Rifter" };
@@ -306,7 +398,9 @@ describe("EVE University Wiki MCP Server Tools", () => {
 
     it("should validate related topics parameters correctly", () => {
       const relatedTopicsSchema = z.object({
-        title: z.string().describe("Title of the EVE University Wiki article"),
+        title: z
+          .string()
+          .describe("Title of the EVE University Wiki article"),
         limit: z
           .number()
           .min(1)
@@ -328,7 +422,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
   describe("Error Message Formatting", () => {
     it("should format error messages consistently across tools", () => {
       const error = new Error("Test error");
-      
+
       const errorMessages = {
         search: `Error searching EVE Wiki: ${error}`,
         article: `Error getting article: ${error}`,
@@ -338,7 +432,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
         relatedTopics: `Error getting related topics: ${error}`,
       };
 
-      Object.values(errorMessages).forEach(message => {
+      Object.values(errorMessages).forEach((message) => {
         expect(message).toContain("Error");
         expect(message).toContain("Test error");
       });
@@ -349,7 +443,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
     it("should format responses with proper indentation", () => {
       const data = { query: "test", results: [] };
       const formatted = JSON.stringify(data, null, 2);
-      
+
       expect(formatted).toContain("{\n");
       expect(formatted).toContain("  \"query\":");
       expect(formatted).toContain("  \"results\":");
@@ -361,13 +455,13 @@ describe("EVE University Wiki MCP Server Tools", () => {
         title: "Rifter",
         sections: [
           { title: "Overview", level: 1, index: 1 },
-          { title: "Fitting", level: 2, index: 2 }
-        ]
+          { title: "Fitting", level: 2, index: 2 },
+        ],
       };
-      
+
       const formatted = JSON.stringify(complexData, null, 2);
       const parsed = JSON.parse(formatted);
-      
+
       expect(parsed).toEqual(complexData);
       expect(formatted).toContain("\"sections\": [");
     });
@@ -388,14 +482,14 @@ describe("EVE University Wiki MCP Server Tools", () => {
     it("should have descriptive titles for all tools", () => {
       const toolTitles = [
         "Search EVE University Wiki",
-        "Get EVE University Wiki Article", 
+        "Get EVE University Wiki Article",
         "Get EVE University Wiki Summary",
         "Get EVE University Wiki Sections",
         "Get EVE University Wiki Links",
-        "Get Related EVE University Wiki Topics"
+        "Get Related EVE University Wiki Topics",
       ];
 
-      toolTitles.forEach(title => {
+      toolTitles.forEach((title) => {
         expect(title).toContain("EVE University Wiki");
         expect(title.length).toBeGreaterThan(15);
       });
@@ -408,7 +502,7 @@ describe("EVE University Wiki MCP Server Tools", () => {
         uri: "https://wiki.eveuniversity.org/",
         name: "EVE University Wiki Info",
         mimeType: "text/plain",
-        text: "EVE University Wiki - The comprehensive resource for EVE Online knowledge and learning"
+        text: "EVE University Wiki - The comprehensive resource for EVE Online knowledge and learning",
       };
 
       expect(resource.uri).toMatch(/^https?:\/\//);
@@ -420,7 +514,8 @@ describe("EVE University Wiki MCP Server Tools", () => {
     it("should have valid prompt configuration", () => {
       const prompt = {
         name: "eve-wiki-search-helper",
-        description: "Generate a search query for EVE University Wiki based on your question",
+        description:
+          "Generate a search query for EVE University Wiki based on your question",
         arguments: [
           {
             name: "question",

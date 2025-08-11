@@ -95,6 +95,28 @@ describe("EVE University Wiki MCP Server", () => {
             expect(50).toBeLessThanOrEqual(50);
             expect(10).toBe(10); // default value
         });
+
+        it("should return archived note when search results are from Wayback Machine", () => {
+            const mockArchivedResults = [
+                {
+                    title: "Rifter (Archived)",
+                    snippet: "Archived content...",
+                    pageid: -1, // Archived result
+                },
+            ];
+            const hasArchivedResults = mockArchivedResults.some(r => r.pageid === -1);
+
+            const response = {
+                query: "Rifter",
+                results: mockArchivedResults,
+                note: hasArchivedResults
+                  ? "Some results are from Internet Archive Wayback Machine"
+                  : undefined,
+            };
+
+            expect(response.note).toContain("Internet Archive Wayback Machine");
+            expect(response.results[0].pageid).toBe(-1);
+        });
     });
 
     describe("Tool: get_eve_wiki_article", () => {
@@ -129,6 +151,27 @@ describe("EVE University Wiki MCP Server", () => {
             expect(limitedContent.length).toBe(10000);
             expect(limitedContent.length).toBeLessThan(longContent.length);
         });
+
+        it("should return correct source when article is from Wayback Machine", () => {
+            const mockArticle = {
+                title: "Rifter (Archived)",
+                content: "Archived content...",
+                pageid: -1,
+                timestamp: "2023-01-01T00:00:00Z",
+            };
+            const isArchived = mockArticle.pageid === -1;
+
+            const response = {
+                ...mockArticle,
+                source: isArchived ? "wayback_machine" : "live_wiki",
+                note: isArchived
+                  ? "Content retrieved from Internet Archive Wayback Machine"
+                  : undefined,
+            };
+
+            expect(response.source).toBe("wayback_machine");
+            expect(response.note).toContain("Internet Archive Wayback Machine");
+        });
     });
 
     describe("Tool: get_eve_wiki_summary", () => {
@@ -141,6 +184,21 @@ describe("EVE University Wiki MCP Server", () => {
 
             expect(mockEveWikiClient.getSummary).toHaveBeenCalledWith("Rifter");
             expect(result).toBe(mockSummary);
+        });
+
+        it("should return correct source when summary is from Wayback Machine", () => {
+            const mockSummary = "Archived summary (Retrieved from archived version)";
+            const isArchived = mockSummary.includes(
+                "(Retrieved from archived version)",
+            );
+
+            const response = {
+                title: "Rifter",
+                summary: mockSummary,
+                source: isArchived ? "wayback_machine" : "live_wiki",
+            };
+
+            expect(response.source).toBe("wayback_machine");
         });
 
         it("should handle summary errors", async () => {
