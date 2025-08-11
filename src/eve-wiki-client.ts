@@ -81,7 +81,7 @@ export class EveWikiClient {
           },
         });
 
-        const pages = response.data.query?.pages;
+        const pages = response.data?.query?.pages;
         if (!pages) {
           throw new Error("No pages found");
         }
@@ -128,7 +128,7 @@ export class EveWikiClient {
           },
         });
 
-        const pages = response.data.query?.pages;
+        const pages = response.data?.query?.pages;
         if (!pages) {
           return [];
         }
@@ -165,7 +165,7 @@ export class EveWikiClient {
           },
         });
 
-        const pages = categoriesResponse.data.query?.pages;
+        const pages = categoriesResponse.data?.query?.pages;
         if (!pages) {
           return [];
         }
@@ -194,7 +194,7 @@ export class EveWikiClient {
               },
             });
 
-            if (categoryResponse.data.query?.categorymembers) {
+            if (categoryResponse.data?.query?.categorymembers) {
               categoryResponse.data.query.categorymembers.forEach(
                 (member: { title: string }) => {
                   if (member.title !== title && relatedArticles.size < limit) {
@@ -234,7 +234,7 @@ export class EveWikiClient {
           },
         });
 
-        if (response.data.parse?.sections) {
+        if (response.data?.parse?.sections) {
           return response.data.parse.sections.map(
             (section: { index: string; level: string; line: string }) => ({
               index: parseInt(section.index) || 0,
@@ -270,7 +270,7 @@ export class EveWikiClient {
           },
         });
 
-        const pages = response.data.query?.pages;
+        const pages = response.data?.query?.pages;
         if (!pages) {
           throw new Error("No pages found");
         }
@@ -307,7 +307,7 @@ export class EveWikiClient {
           },
         });
 
-        if (response.data.query?.search) {
+        if (response.data?.query?.search) {
           return response.data.query.search.map(
             (item: {
               pageid: number;
