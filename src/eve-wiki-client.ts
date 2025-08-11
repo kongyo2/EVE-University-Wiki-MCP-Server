@@ -24,9 +24,16 @@ export interface Section {
   title: string;
 }
 
+export interface WaybackSnapshot {
+  timestamp: string;
+  url: string;
+  available: boolean;
+}
+
 export class EveWikiClient {
   private baseUrl: string;
   private client: AxiosInstance;
+  private waybackClient: AxiosInstance;
   private maxRetries: number;
   private retryDelay: number;
 
@@ -36,6 +43,14 @@ export class EveWikiClient {
     this.retryDelay = retryDelay;
     this.client = axios.create({
       baseURL: this.baseUrl,
+      headers: {
+        "User-Agent": "EVE-University-MCP-Server/1.0.0",
+      },
+      timeout: 30000,
+    });
+
+    // Wayback Machine client for fallback
+    this.waybackClient = axios.create({
       headers: {
         "User-Agent": "EVE-University-MCP-Server/1.0.0",
       },
@@ -65,7 +80,83 @@ export class EveWikiClient {
   }
 
   /**
-   * Get full article content
+   * Check if a URL is available in Wayback Machine
+   */
+  private async checkWaybackAvailability(url: string): Promise<WaybackSnapshot | null> {
+    try {
+      const response = await this.waybackClient.get("https://archive.org/wayback/available", {
+        params: { url }
+      });
+
+      if (response.data?.archived_snapshots?.closest?.available) {
+        return {
+          timestamp: response.data.archived_snapshots.closest.timestamp,
+          url: response.data.archived_snapshots.closest.url,
+          available: true
+        };
+      }
+      return null;
+    } catch (error) {
+      console.warn("Wayback Machine availability check failed:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Get archived content from Wayback Machine
+   */
+  private async getWaybackContent(url: string, timestamp?: string): Promise<string> {
+    try {
+      let waybackUrl: string;
+      
+      if (timestamp) {
+        waybackUrl = `https://web.archive.org/web/${timestamp}id_/${url}`;
+      } else {
+        // Get the latest available snapshot
+        const snapshot = await this.checkWaybackAvailability(url);
+        if (!snapshot) {
+          throw new Error("No archived version available");
+        }
+        waybackUrl = snapshot.url.replace(/\/web\/\d+\//, `/web/${snapshot.timestamp}id_/`);
+      }
+
+      const response = await this.waybackClient.get(waybackUrl, {
+        responseType: 'text'
+      });
+
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to retrieve from Wayback Machine: ${error}`);
+    }
+  }
+
+  /**
+   * Extract text content from HTML using cheerio
+   */
+  private extractTextFromHtml(html: string): string {
+    try {
+      const $ = cheerio.load(html);
+      
+      // Remove script and style elements
+      $('script, style, nav, header, footer, .mw-navigation').remove();
+      
+      // Get main content area
+      const mainContent = $('#mw-content-text, .mw-parser-output, #content, main').first();
+      
+      if (mainContent.length > 0) {
+        return mainContent.text().trim();
+      }
+      
+      // Fallback to body content
+      return $('body').text().trim();
+    } catch (error) {
+      console.warn("Failed to parse HTML:", error);
+      return html;
+    }
+  }
+
+  /**
+   * Get full article content with Wayback Machine fallback
    */
   async getArticle(title: string): Promise<Article> {
     return this.retryableRequest(async () => {
@@ -106,8 +197,25 @@ export class EveWikiClient {
           title: page.title,
         };
       } catch (error) {
-        console.error("Error getting article:", error);
-        throw new Error(`Failed to get article "${title}": ${error}`);
+        console.error("Primary EVE Wiki request failed, trying Wayback Machine fallback:", error);
+        
+        // Try Wayback Machine fallback
+        try {
+          const articleUrl = `https://wiki.eveuniversity.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+          const waybackContent = await this.getWaybackContent(articleUrl);
+          const textContent = this.extractTextFromHtml(waybackContent);
+          
+          return {
+            content: textContent,
+            pageid: -1, // Indicate this is from Wayback Machine
+            revid: -1,
+            timestamp: new Date().toISOString(),
+            title: `${title} (Archived)`,
+          };
+        } catch (waybackError) {
+          console.error("Wayback Machine fallback also failed:", waybackError);
+          throw new Error(`Failed to get article "${title}" from both primary source and Wayback Machine: ${error}`);
+        }
       }
     });
   }
@@ -253,7 +361,7 @@ export class EveWikiClient {
   }
 
   /**
-   * Get article summary (first paragraph)
+   * Get article summary with Wayback Machine fallback
    */
   async getSummary(title: string): Promise<string> {
     return this.retryableRequest(async () => {
@@ -284,14 +392,29 @@ export class EveWikiClient {
 
         return page.extract || "No summary available";
       } catch (error) {
-        console.error("Error getting summary:", error);
-        throw new Error(`Failed to get summary for "${title}": ${error}`);
+        console.error("Primary EVE Wiki summary request failed, trying Wayback Machine fallback:", error);
+        
+        // Try Wayback Machine fallback
+        try {
+          const articleUrl = `https://wiki.eveuniversity.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`;
+          const waybackContent = await this.getWaybackContent(articleUrl);
+          const textContent = this.extractTextFromHtml(waybackContent);
+          
+          // Extract first paragraph as summary
+          const paragraphs = textContent.split('\n\n').filter(p => p.trim().length > 0);
+          const summary = paragraphs[0] || textContent.substring(0, 500);
+          
+          return `${summary} (Retrieved from archived version)`;
+        } catch (waybackError) {
+          console.error("Wayback Machine fallback also failed:", waybackError);
+          throw new Error(`Failed to get summary for "${title}" from both primary source and Wayback Machine: ${error}`);
+        }
       }
     });
   }
 
   /**
-   * Search for articles on EVE University Wiki
+   * Search for articles on EVE University Wiki with Wayback Machine fallback
    */
   async search(query: string, limit: number = 10): Promise<SearchResult[]> {
     return this.retryableRequest(async () => {
@@ -327,8 +450,51 @@ export class EveWikiClient {
 
         return [];
       } catch (error) {
-        console.error("Error searching EVE Wiki:", error);
-        throw new Error(`Failed to search EVE Wiki: ${error}`);
+        console.error("Primary EVE Wiki search failed, trying Wayback Machine fallback:", error);
+        
+        // Try Wayback Machine fallback with common EVE-related pages
+        try {
+          const commonEvePages = [
+            "Fitting", "Ships", "Mining", "Trading", "PvP", "Missions", 
+            "Corporations", "Alliances", "Industry", "Exploration"
+          ];
+          
+          const matchingPages = commonEvePages.filter(page => 
+            page.toLowerCase().includes(query.toLowerCase()) ||
+            query.toLowerCase().includes(page.toLowerCase())
+          );
+          
+          if (matchingPages.length === 0) {
+            // If no matches, try to get a few common pages
+            matchingPages.push(...commonEvePages.slice(0, Math.min(limit, 3)));
+          }
+          
+          const results: SearchResult[] = [];
+          
+          for (const page of matchingPages.slice(0, limit)) {
+            try {
+              const articleUrl = `https://wiki.eveuniversity.org/wiki/${encodeURIComponent(page.replace(/ /g, '_'))}`;
+              const snapshot = await this.checkWaybackAvailability(articleUrl);
+              
+              if (snapshot) {
+                results.push({
+                  pageid: -1, // Indicate this is from Wayback Machine
+                  snippet: `Archived content related to ${page} (from Wayback Machine)`,
+                  timestamp: snapshot.timestamp,
+                  title: `${page} (Archived)`,
+                  wordcount: 0,
+                });
+              }
+            } catch (pageError) {
+              console.warn(`Failed to check Wayback availability for ${page}:`, pageError);
+            }
+          }
+          
+          return results;
+        } catch (waybackError) {
+          console.error("Wayback Machine fallback also failed:", waybackError);
+          throw new Error(`Failed to search EVE Wiki from both primary source and Wayback Machine: ${error}`);
+        }
       }
     });
   }

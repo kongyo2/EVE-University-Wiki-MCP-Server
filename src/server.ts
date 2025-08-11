@@ -18,14 +18,17 @@ server.addTool({
     readOnlyHint: true, // This tool doesn't modify anything
     title: "Search EVE University Wiki",
   },
-  description: "Search for articles on EVE University Wiki",
+  description: "Search for articles on EVE University Wiki (with Wayback Machine fallback)",
   execute: async (args) => {
     try {
       const results = await eveWikiClient.search(args.query, args.limit);
+      const hasArchivedResults = results.some(r => r.pageid === -1);
+      
       return JSON.stringify(
         {
           query: args.query,
           results: results,
+          note: hasArchivedResults ? "Some results are from Internet Archive Wayback Machine" : undefined,
         },
         null,
         2,
@@ -53,16 +56,20 @@ server.addTool({
     readOnlyHint: true,
     title: "Get EVE University Wiki Article",
   },
-  description: "Get the full content of an EVE University Wiki article",
+  description: "Get the full content of an EVE University Wiki article (with Wayback Machine fallback)",
   execute: async (args) => {
     try {
       const article = await eveWikiClient.getArticle(args.title);
+      const isArchived = article.pageid === -1;
+      
       return JSON.stringify(
         {
           content: article.content.substring(0, 10000), // Limit content length
           pageid: article.pageid,
           timestamp: article.timestamp,
           title: article.title,
+          source: isArchived ? "wayback_machine" : "live_wiki",
+          note: isArchived ? "Content retrieved from Internet Archive Wayback Machine" : undefined,
         },
         null,
         2,
@@ -84,14 +91,17 @@ server.addTool({
     readOnlyHint: true,
     title: "Get EVE University Wiki Summary",
   },
-  description: "Get a summary of an EVE University Wiki article",
+  description: "Get a summary of an EVE University Wiki article (with Wayback Machine fallback)",
   execute: async (args) => {
     try {
       const summary = await eveWikiClient.getSummary(args.title);
+      const isArchived = summary.includes("(Retrieved from archived version)");
+      
       return JSON.stringify(
         {
           summary: summary,
           title: args.title,
+          source: isArchived ? "wayback_machine" : "live_wiki",
         },
         null,
         2,
