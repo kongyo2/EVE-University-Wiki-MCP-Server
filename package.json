@@ -1,5 +1,5 @@
 {
-  "name": "fastmcp-boilerplate",
+  "name": "eve-university-mcp",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
@@ -18,16 +18,18 @@
   "repository": {
     "url": "https://github.com/punkpeye/fastmcp-boilerplate"
   },
-  "author": "Frank Fiegel <frank@glama.ai>",
+  "author": "Kilo Code <kilo-code@example.com>",
   "homepage": "https://glama.ai/mcp",
   "type": "module",
   "license": "MIT",
-  "description": "A boilerplate for FastMCP",
+  "description": "A FastMCP server for EVE University Wiki",
   "dependencies": {
-    "axios": "^1.7.9",
+    "axios": "^1.11.0",
+    "cheerio": "^1.1.2",
     "fastmcp": "^1.27.3",
-    "zod": "^3.24.4",
-    "zod-to-json-schema": "^3.24.6"
+    "turndown": "^7.2.0",
+    "wikijs": "^6.4.1",
+    "zod": "^3.24.4"
   },
   "release": {
     "branches": [
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@eslint/js": "^9.26.0",
     "@tsconfig/node22": "^22.0.1",
+    "@types/cheerio": "^0.22.35",
     "@types/node": "^22.10.5",
     "eslint-config-prettier": "^10.1.3",
     "eslint-plugin-perfectionist": "^4.12.3",

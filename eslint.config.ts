@@ -9,6 +9,12 @@ export default tseslint.config(
   perfectionist.configs["recommended-alphabetical"],
   eslintConfigPrettier,
   {
-    ignores: ["**/*.js", "README.md", ".kiro/**/*", ".kilocode/**/*"],
+    ignores: [
+      "**/*.js",
+      "README.md",
+      ".kiro/**/*",
+      ".kilocode/**/*",
+      ".augment/**/*",
+    ],
   },
 );
