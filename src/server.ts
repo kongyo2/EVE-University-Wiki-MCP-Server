@@ -64,7 +64,7 @@ server.addTool({
       
       return JSON.stringify(
         {
-          content: article.content.substring(0, 10000), // Limit content length
+          content: article.content, // Full content without limit
           pageid: article.pageid,
           timestamp: article.timestamp,
           title: article.title,
@@ -158,7 +158,7 @@ server.addTool({
       const links = await eveWikiClient.getLinks(args.title);
       return JSON.stringify(
         {
-          links: links.slice(0, 100), // Limit to first 100 links
+          links: links, // All links without limit
           title: args.title,
         },
         null,

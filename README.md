@@ -29,7 +29,7 @@ Search for articles on EVE University Wiki
 Retrieve full content of a specific wiki article
 - **Parameters**: 
   - `title` (string): Article title
-- **Returns**: Complete article content (limited to 10,000 characters for performance)
+- **Returns**: Complete article content
 
 ### 3. `get_eve_wiki_summary`
 Get a concise summary of an article
@@ -47,7 +47,7 @@ List all sections within an article
 Get all internal links from an article
 - **Parameters**: 
   - `title` (string): Article title
-- **Returns**: Array of linked article titles (limited to 100 for performance)
+- **Returns**: Array of linked article titles
 
 ### 6. `get_eve_wiki_related_topics`
 Find related articles based on categories
