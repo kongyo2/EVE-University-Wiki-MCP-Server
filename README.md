@@ -1,74 +1,209 @@
-# FastMCP Boilerplate
+# EVE University Wiki MCP Server
 
-A boilerplate for [FastMCP](https://github.com/punkpeye/fastmcp).
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides access to EVE University Wiki content with automatic Wayback Machine fallback for enhanced reliability.
 
-This boilerplate is a good starting point for building an MCP server. It includes a basic setup for testing, linting, formatting, and publishing to NPM.
+This server enables AI assistants to search, retrieve, and explore EVE Online knowledge from the comprehensive EVE University Wiki, making it an invaluable resource for EVE Online players, developers, and enthusiasts.
 
-## Development
+## Features
 
-To get started, clone the repository and install the dependencies.
+- **Comprehensive Search**: Search across all EVE University Wiki articles with intelligent result ranking
+- **Full Article Access**: Retrieve complete article content with proper formatting
+- **Article Summaries**: Get concise summaries for quick information overview
+- **Section Navigation**: Browse article sections and structure
+- **Link Discovery**: Find related articles through internal wiki links
+- **Related Topics**: Discover related content based on article categories
+- **Wayback Machine Fallback**: Automatic fallback to Internet Archive when primary wiki is unavailable
+- **Robust Error Handling**: Graceful degradation with retry mechanisms
+- **Rate Limiting**: Built-in request throttling to respect server resources
+
+## Tools Available
+
+### 1. `search_eve_wiki`
+Search for articles on EVE University Wiki
+- **Parameters**: 
+  - `query` (string): Search query
+  - `limit` (number, 1-50, default: 10): Maximum results to return
+- **Returns**: Array of search results with titles, snippets, and metadata
+
+### 2. `get_eve_wiki_article`
+Retrieve full content of a specific wiki article
+- **Parameters**: 
+  - `title` (string): Article title
+- **Returns**: Complete article content (limited to 10,000 characters for performance)
+
+### 3. `get_eve_wiki_summary`
+Get a concise summary of an article
+- **Parameters**: 
+  - `title` (string): Article title
+- **Returns**: Article summary/extract
+
+### 4. `get_eve_wiki_sections`
+List all sections within an article
+- **Parameters**: 
+  - `title` (string): Article title
+- **Returns**: Array of sections with titles, levels, and indices
+
+### 5. `get_eve_wiki_links`
+Get all internal links from an article
+- **Parameters**: 
+  - `title` (string): Article title
+- **Returns**: Array of linked article titles (limited to 100 for performance)
+
+### 6. `get_eve_wiki_related_topics`
+Find related articles based on categories
+- **Parameters**: 
+  - `title` (string): Article title
+  - `limit` (number, 1-20, default: 10): Maximum related topics to return
+- **Returns**: Array of related article titles
+
+## Resources
+
+- **EVE University Wiki Info**: Basic information about the EVE University Wiki
+
+## Prompts
+
+- **eve-wiki-search-helper**: Generates optimized search queries for EVE University Wiki based on user questions
+
+## Installation & Setup
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Install Dependencies
 
 ```bash
-git clone https://github.com/punkpeye/fastmcp-boilerplate.git
-cd fastmcp-boilerplate
 npm install
+```
+
+### Development
+
+Start the server in development mode with interactive CLI:
+
+```bash
 npm run dev
 ```
 
-> [!NOTE]
-> If you are starting a new project, you may want to fork [fastmcp-boilerplate](https://github.com/punkpeye/fastmcp-boilerplate) and start from there.
+### Production
 
-### Start the server
-
-If you simply want to start the server, you can use the `start` script.
+Build and start the server:
 
 ```bash
+npm run build
 npm run start
 ```
 
-However, you can also interact with the server using the `dev` script.
+## Usage with MCP Clients
 
-```bash
-npm run dev
+### Claude Desktop
+
+Add to your Claude Desktop configuration:
+
+```json
+{
+  "mcpServers": {
+    "eve-university-wiki": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/eve-university-mcp/src/server.ts"],
+      "env": {}
+    }
+  }
+}
 ```
 
-This will start the server and allow you to interact with it using CLI.
+### Other MCP Clients
+
+The server uses stdio transport and follows the MCP specification, making it compatible with any MCP client.
+
+## Example Usage
+
+```typescript
+// Search for EVE Online ships
+await callTool("search_eve_wiki", { 
+  query: "Rifter frigate", 
+  limit: 5 
+});
+
+// Get detailed information about a specific ship
+await callTool("get_eve_wiki_article", { 
+  title: "Rifter" 
+});
+
+// Get a quick summary
+await callTool("get_eve_wiki_summary", { 
+  title: "Rifter" 
+});
+
+// Find related topics
+await callTool("get_eve_wiki_related_topics", { 
+  title: "Rifter", 
+  limit: 10 
+});
+```
+
+## Wayback Machine Fallback
+
+When the primary EVE University Wiki is unavailable, the server automatically attempts to retrieve content from the Internet Archive's Wayback Machine. This ensures continued access to EVE Online knowledge even during wiki downtime.
+
+Archived content is clearly marked in responses with:
+- `source: "wayback_machine"` field
+- `pageid: -1` to indicate archived content
+- Descriptive notes about the content source
+
+## Development
 
 ### Testing
 
-A good MCP server should have tests. However, you don't need to test the MCP server itself, but rather the tools you implement.
+Run the comprehensive test suite:
 
 ```bash
 npm run test
 ```
 
-In the case of this boilerplate, we only test the implementation of the `add` tool.
+The test suite covers:
+- All tool functionality
+- Error handling scenarios
+- Parameter validation
+- Response formatting
+- Wayback Machine fallback
 
-### Linting
-
-Having a good linting setup reduces the friction for other developers to contribute to your project.
-
-```bash
-npm run lint
-```
-
-This boilerplate uses [Prettier](https://prettier.io/), [ESLint](https://eslint.org/) and [TypeScript ESLint](https://typescript-eslint.io/) to lint the code.
-
-### Formatting
-
-Use `npm run format` to format the code.
+### Linting & Formatting
 
 ```bash
-npm run format
+npm run lint    # Check code style
+npm run format  # Fix formatting issues
 ```
 
-### GitHub Actions
+### Code Quality
 
-This repository has a GitHub Actions workflow that runs linting, formatting, tests, and publishes package updates to NPM using [semantic-release](https://semantic-release.gitbook.io/semantic-release/).
+This project uses:
+- [TypeScript](https://www.typescriptlang.org/) for type safety
+- [ESLint](https://eslint.org/) for code quality
+- [Prettier](https://prettier.io/) for consistent formatting
+- [Vitest](https://vitest.dev/) for testing
 
-In order to use this workflow, you need to:
+## Architecture
 
-1. Add `NPM_TOKEN` to the repository secrets
-   1. [Create a new automation token](https://www.npmjs.com/settings/punkpeye/tokens/new)
-   2. Add token as `NPM_TOKEN` environment secret (Settings → Secrets and Variables → Actions → "Manage environment secrets" → "release" → Add environment secret)
-1. Grant write access to the workflow (Settings → Actions → General → Workflow permissions → "Read and write permissions")
+The server is built with:
+- **FastMCP**: High-performance MCP server framework
+- **Axios**: HTTP client with retry logic and timeout handling
+- **Cheerio**: HTML parsing for Wayback Machine content
+- **Zod**: Runtime type validation for parameters
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Run `npm run lint` and `npm run test`
+5. Submit a pull request
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Related Projects
+
+- [FastMCP](https://github.com/punkpeye/fastmcp) - The MCP server framework used
+- [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol specification
+- [EVE University Wiki](https://wiki.eveuniversity.org/) - The knowledge source
