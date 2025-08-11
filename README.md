@@ -2,6 +2,10 @@
 
 [![smithery badge](https://smithery.ai/badge/@kongyo2/eve-university-wiki-mcp-server)](https://smithery.ai/server/@kongyo2/eve-university-wiki-mcp-server)
 
+<a href="https://glama.ai/mcp/servers/@kongyo2/EVE-University-Wiki-MCP-Server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@kongyo2/EVE-University-Wiki-MCP-Server/badge" />
+</a>
+
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides access to EVE University Wiki content with automatic Wayback Machine fallback for enhanced reliability.
 
 This server enables AI assistants to search, retrieve, and explore EVE Online knowledge from the comprehensive EVE University Wiki, making it an invaluable resource for EVE Online players, developers, and enthusiasts.
