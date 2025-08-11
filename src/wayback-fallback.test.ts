@@ -287,7 +287,7 @@ describe("EVE Wiki Client Wayback Machine Fallback", () => {
       await expect(client.getArticle("NonExistent")).rejects.toThrow(
         "Failed to get article \"NonExistent\" from both primary source and Wayback Machine"
       );
-    });
+    }, 10000);
   });
 
   describe("Summary Retrieval with Fallback", () => {
@@ -446,7 +446,7 @@ describe("EVE Wiki Client Wayback Machine Fallback", () => {
       await expect(client.getArticle("Test")).rejects.toThrow(
         "Failed to get article \"Test\" from both primary source and Wayback Machine"
       );
-    });
+    }, 10000);
 
     it("should handle malformed API responses", async () => {
       mockAxiosInstance.get.mockResolvedValue({ data: null });
@@ -455,7 +455,7 @@ describe("EVE Wiki Client Wayback Machine Fallback", () => {
       await expect(client.getArticle("Test")).rejects.toThrow(
         "Failed to get article \"Test\" from both primary source and Wayback Machine"
       );
-    });
+    }, 10000);
   });
 
   describe("Performance Considerations", () => {

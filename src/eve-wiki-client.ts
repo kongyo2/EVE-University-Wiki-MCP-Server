@@ -214,7 +214,7 @@ export class EveWikiClient {
           };
         } catch (waybackError) {
           console.error("Wayback Machine fallback also failed:", waybackError);
-          throw new Error(`Failed to get article "${title}" from both primary source and Wayback Machine: ${error}`);
+          throw new Error(`Failed to get article "${title}" from both primary source and Wayback Machine`);
         }
       }
     });
@@ -407,7 +407,7 @@ export class EveWikiClient {
           return `${summary} (Retrieved from archived version)`;
         } catch (waybackError) {
           console.error("Wayback Machine fallback also failed:", waybackError);
-          throw new Error(`Failed to get summary for "${title}" from both primary source and Wayback Machine: ${error}`);
+          throw new Error(`Failed to get summary for "${title}" from both primary source and Wayback Machine`);
         }
       }
     });
@@ -493,7 +493,7 @@ export class EveWikiClient {
           return results;
         } catch (waybackError) {
           console.error("Wayback Machine fallback also failed:", waybackError);
-          throw new Error(`Failed to search EVE Wiki from both primary source and Wayback Machine: ${error}`);
+          throw new Error(`Failed to search EVE Wiki from both primary source and Wayback Machine`);
         }
       }
     });
