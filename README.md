@@ -6,6 +6,10 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 This server enables AI assistants to search, retrieve, and explore EVE Online knowledge from the comprehensive EVE University Wiki, making it an invaluable resource for EVE Online players, developers, and enthusiasts.
 
+<a href="https://glama.ai/mcp/servers/@kongyo2/EVE-University-Wiki-MCP-Server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@kongyo2/EVE-University-Wiki-MCP-Server/badge" alt="EVE University Wiki Server MCP server" />
+</a>
+
 ## Features
 
 - **Comprehensive Search**: Search across all EVE University Wiki articles with intelligent result ranking
@@ -217,4 +221,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - [FastMCP](https://github.com/punkpeye/fastmcp) - The MCP server framework used
 - [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol specification
 - [EVE University Wiki](https://wiki.eveuniversity.org/) - The knowledge source
-
