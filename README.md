@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/kongyo2-eve-university-wiki-mcp-server-badge.png)](https://mseep.ai/app/kongyo2-eve-university-wiki-mcp-server)
+
 # EVE University Wiki MCP Server
 
 [![smithery badge](https://smithery.ai/badge/@kongyo2/eve-university-wiki-mcp-server)](https://smithery.ai/server/@kongyo2/eve-university-wiki-mcp-server)
